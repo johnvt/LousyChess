@@ -14,7 +14,7 @@ class GameController extends Controller
      */
     public function index()
     {
-        //
+
     }
 
     /**
@@ -47,8 +47,7 @@ class GameController extends Controller
     public function show(Game $game)
     {
         $game = new Game();
-        $board = 'kqbnrppppp..........PPPPPRNBQK';
-        return view('game.show', ['tiles' => $game->getBoardCharacters($board)]);
+        return view('game.show', ['game' => $game]);
     }
 
     /**

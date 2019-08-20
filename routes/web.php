@@ -11,4 +11,5 @@
 |
 */
 
+Route::view('/', 'home')->name('home');
 Route::resource('games', 'GameController');
