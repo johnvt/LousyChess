@@ -1,11 +1,13 @@
 <?php
-/** @var App\Game $game */
+/** @var App\Models\Game $game */
 ?>
 @extends('layouts.app')
 
 @section('content')
     <div class="row">
         <div class="col-sm">
+            <h3>White: {{ $game->players[$game::WHITE]->name }} ({{ $game->players[$game::WHITE]->seed }})</h3>
+            <h3>Black: {{ $game->players[$game::BLACK]->name }} ({{ $game->players[$game::BLACK]->seed }})</h3>
             <table class="chess-diagram table-borderless">
                 <tr>
                     <td class="board-border">6</td>
@@ -53,6 +55,7 @@
             &nbsp;&nbsp;&nbsp;
             <a href="#" id="next" class="arrow">&rarr;</a>
             <div class="moves"></div>
+            <div class="result">{{ is_null($game->winner) ? 'Draw' : ($game->winner == $game::WHITE ? 'White wins' : 'Black wins') }}</div>
         </div>
     </div>
     <script>
@@ -65,10 +68,10 @@
                 if (v.from === -1)
                     str += 'start';
                 else
-                    str += String.fromCharCode("a".charCodeAt(0) + v.from % 5) +
+                    str += String.fromCharCode('a'.charCodeAt(0) + v.from % 5) +
                         (6 - Math.floor(v.from / 5)) +
                         '-' +
-                        String.fromCharCode("a".charCodeAt(0) + v.to % 5) +
+                        String.fromCharCode('a'.charCodeAt(0) + v.to % 5) +
                         (6 - Math.floor(v.to / 5));
                 str += '</div>';
             });

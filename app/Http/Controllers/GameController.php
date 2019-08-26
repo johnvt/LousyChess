@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Game;
+use App\Models\Game;
 use Illuminate\Http\Request;
 
 class GameController extends Controller
@@ -41,12 +41,16 @@ class GameController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Game $game
+     * @param  \App\Models\Game $game
      * @return \Illuminate\Http\Response
      */
     public function show(Game $game)
     {
+        // First game :) 101121212701, 78, 43
         $game = new Game();
+
+        $game->run(rand(100000, 999999), rand(1, 10), rand(1, 10));
+
         return view('game.show', ['game' => $game]);
     }
 
