@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
-use App\Models\Engines\RandomEngine;
+use App\Models\Engines\BlackTilesAreLava;
+use App\Models\Engines\RandomMoveEngine;
+use App\Models\Engines\TheKingMustDieEngine;
+use App\Models\Engines\WhiteTilesAreLava;
+use DemeterChain\B;
 use Illuminate\Database\Eloquent\Model;
 
 class Game //extends Model
@@ -11,22 +15,34 @@ class Game //extends Model
     const BLACK = -1;
     const STARTING_BOARD = 'kqbnrppppp..........PPPPPRNBQK';
 
+    /** @var Engine[] */
     public $players;
     public $moveCount = 0;
     public $moves;
     public $turn = self::WHITE;
+
+    /**
+     * @var string Current board
+     */
     public $board = self::STARTING_BOARD;
+
+    /**
+     * @var array Board after every move
+     */
+    public $boards = [self::STARTING_BOARD];
     public $winner;
     public $seed1;
     public $seed2;
+    public $bombNumber;
 
     public function run($bombNumber, $seed1, $seed2)
     {
+        $this->bombNumber = $bombNumber;
         $this->seed1 = $seed1;
         $this->seed2 = $seed2;
         $this->players = [
-            self::WHITE => new RandomEngine(self::WHITE, $bombNumber * $seed1),
-            self::BLACK => new RandomEngine(self::BLACK, $bombNumber * $seed2)
+            self::WHITE => new BlackTilesAreLava(self::WHITE, $bombNumber * $seed1),
+            self::BLACK => new BlackTilesAreLava(self::BLACK, $bombNumber * $seed2)
         ];
 
         while (true) {
@@ -38,6 +54,7 @@ class Game //extends Model
                 break;
             }
             $this->moves[] = $move;
+
             if ($this->board[$move[1]] == 'k') {
                 $this->winner = self::WHITE;
             }
@@ -47,14 +64,22 @@ class Game //extends Model
             $this->board[$move[1]] = $this->board[$move[0]];
             $this->board[$move[0]] = '.';
 
+
+            // Is the game finished?
+            if (!is_null($this->winner) || count($this->moves) == 100) {
+                $this->boards[] = $this->board;
+                break;
+            }
+
             // Pawn promotion
-            // @todo
+            if (intdiv($move[1], 5) == 0 && $this->board[$move[1]] == 'P') {
+                $this->board[$move[1]] = 'Q';
+            }
+            elseif (intdiv($move[1], 5) == 5 && $this->board[$move[1]] == 'p') {
+                $this->board[$move[1]] = 'q';
+            }
 
-            // Do we have a winner?
-            if (!is_null($this->winner)) break;
-
-            // Draw by 50 moves?
-            if (count($this->moves) == 50) break;
+            $this->boards[] = $this->board;
 
             $this->turn = -$this->turn;
         }
@@ -106,7 +131,7 @@ class Game //extends Model
                 case 'p':
                     $moves = array_merge($moves, $this->scan($x, $y, -1, -$color, true, 'only'));
                     $moves = array_merge($moves, $this->scan($x, $y, 1, -$color, true, 'only'));
-                    $moves = array_merge($moves, $this->scan($x, $y, 0, -$color, true, 'false'));
+                    $moves = array_merge($moves, $this->scan($x, $y, 0, -$color, true, 'no'));
                     break;
             }
         }
@@ -211,21 +236,26 @@ class Game //extends Model
         return $x + $y * 5;
     }
 
+    private function xy($pos)
+    {
+        return [$pos % 5, intdiv($pos, 5)];
+    }
 
     public function getMovesJson()
     {
         $moves = array_merge([[-1, -1]], $this->moves);
 
-        $board = self::STARTING_BOARD;
+//        $board = self::STARTING_BOARD;
         $result = [];
-        foreach ($moves as $move) {
-            if ($move[0] != -1) {
-                $board[$move[1]] = $board[$move[0]];
-                $board[$move[0]] = '.';
-            }
+        foreach ($moves as $i => $move) {
+
+//            if ($move[0] != -1) {
+//                $board[$move[1]] = $board[$move[0]];
+//                $board[$move[0]] = '.';
+//            }
 
             // Piece chars to font chars
-            $string = strtr($board, 'PNBRQKpnbrqk', 'phbrqkojntwl');
+            $string = strtr($this->boards[$i], 'PNBRQKpnbrqk', 'phbrqkojntwl');
             for ($i = 0; $i < strlen($string); $i++) {
                 $string[$i] = ($i % 2)
                     ? ($string[$i] == '.' ? '+' : strtoupper($string[$i]))
@@ -235,5 +265,12 @@ class Game //extends Model
         }
 
         return json_encode($result, JSON_PRETTY_PRINT);
+    }
+
+    public function getDistance($from, $to)
+    {
+        $fromXy = $this->xy($from);
+        $toXy = $this->xy($to);
+        return abs($fromXy[0] - $toXy[0]) + abs($fromXy[1] - $toXy[1]);
     }
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "94d4bf9ac7f4a933030e46a346ee2917",
+    "content-hash": "0116f753404ce78b426d8797a3e26f90",
     "packages": [
         {
             "name": "dnoegel/php-xdg-base-dir",
@@ -2947,6 +2947,70 @@
             "time": "2019-08-11T13:17:40+00:00"
         },
         {
+            "name": "cybercog/laravel-whoops-editor",
+            "version": "3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cybercog/laravel-whoops-editor.git",
+                "reference": "ff79d22b7954384af7ce08ae72db7550bde00c36"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cybercog/laravel-whoops-editor/zipball/ff79d22b7954384af7ce08ae72db7550bde00c36",
+                "reference": "ff79d22b7954384af7ce08ae72db7550bde00c36",
+                "shasum": ""
+            },
+            "require": {
+                "filp/whoops": "~2.0",
+                "illuminate/support": ">=5.5.25",
+                "php": "^7.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^1.11",
+                "orchestra/testbench": "~3.5.0",
+                "phpunit/phpunit": "^6.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Cog\\Laravel\\WhoopsEditor\\Providers\\WhoopsEditorServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Cog\\Laravel\\WhoopsEditor\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Anton Komarev",
+                    "role": "Developer",
+                    "email": "a.komarev@cybercog.su",
+                    "homepage": "http://ell.folio.su"
+                }
+            ],
+            "description": "Laravel Whoops Editor helps to open your code editor from exception stack trace.",
+            "homepage": "https://github.com/cybercog/laravel-whoops-editor",
+            "keywords": [
+                "cog",
+                "cybercog",
+                "editor",
+                "error",
+                "exception",
+                "ide",
+                "laravel",
+                "stacktrace",
+                "whoops"
+            ],
+            "time": "2017-12-15T17:22:28+00:00"
+        },
+        {
             "name": "doctrine/instantiator",
             "version": "1.2.0",
             "source": {
@@ -4655,7 +4719,8 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^7.1.3"
+        "php": "^7.1.3",
+        "ext-json": "*"
     },
     "platform-dev": []
 }

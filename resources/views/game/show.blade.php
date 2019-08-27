@@ -6,8 +6,9 @@
 @section('content')
     <div class="row">
         <div class="col-sm">
-            <h3>White: {{ $game->players[$game::WHITE]->name }} ({{ $game->players[$game::WHITE]->seed }})</h3>
-            <h3>Black: {{ $game->players[$game::BLACK]->name }} ({{ $game->players[$game::BLACK]->seed }})</h3>
+            <h3>Bomb number: {{ $game->bombNumber }}</h3>
+            <h3>White: {{ $game->players[$game::WHITE]->name }} ({{ $game->seed1 }} - {{ $game->players[$game::WHITE]->seed }})</h3>
+            <h3>Black: {{ $game->players[$game::BLACK]->name }} ({{ $game->seed2 }} - {{ $game->players[$game::BLACK]->seed }})</h3>
             <table class="chess-diagram table-borderless">
                 <tr>
                     <td class="board-border">6</td>
@@ -64,16 +65,22 @@
             var moves = {!! $game->getMovesJson() !!};
             var str = '';
             $.each(moves, function (k, v) {
-                str += '<div id="move_' + k + '" class="move">';
                 if (v.from === -1)
-                    str += 'start';
-                else
-                    str += String.fromCharCode('a'.charCodeAt(0) + v.from % 5) +
-                        (6 - Math.floor(v.from / 5)) +
-                        '-' +
-                        String.fromCharCode('a'.charCodeAt(0) + v.to % 5) +
-                        (6 - Math.floor(v.to / 5));
-                str += '</div>';
+                    str += 'start<br>';
+                else {
+                    if (k % 2 === 1)
+                        str += Math.ceil(k / 2) + '. ';
+                    str += '<span id="move_' + k + '" class="move">'
+                        + String.fromCharCode('a'.charCodeAt(0) + v.from % 5)
+                        + (6 - Math.floor(v.from / 5))
+                        + String.fromCharCode('a'.charCodeAt(0) + v.to % 5)
+                        + (6 - Math.floor(v.to / 5))
+                        + '</span>';
+                    if (k % 2 === 1)
+                        str += ' ';
+                    else
+                        str += '<br>';
+                }
             });
             $('.moves').html(str);
 

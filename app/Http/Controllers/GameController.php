@@ -46,10 +46,13 @@ class GameController extends Controller
      */
     public function show(Game $game)
     {
-        // First game :) 101121212701, 78, 43
         $game = new Game();
 
-        $game->run(rand(100000, 999999), rand(1, 10), rand(1, 10));
+        $bombNumber = rand(100000, 999999);
+        $seed1 = rand(1, 10);
+        do { $seed2 = rand(1, 10); } while ($seed2 == $seed1);
+
+        $game->run($bombNumber, $seed1, $seed2);
 
         return view('game.show', ['game' => $game]);
     }
