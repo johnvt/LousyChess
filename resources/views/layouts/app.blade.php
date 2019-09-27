@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Laravel</title>
+    <title>Lousy Chess</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,600" rel="stylesheet">
@@ -60,11 +60,17 @@
             line-height: 5rem;
             font-size: 5rem;
         }
+
         .arrow {
             font-size: 2rem;
         }
+
         .move.active {
             font-weight: bold;
+        }
+
+        tr.link {
+            cursor: pointer;
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
@@ -76,10 +82,14 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
             integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
             crossorigin="anonymous"></script>
+    @yield('scripts')
 </head>
 <body>
 <div class="container">
     <ul class="nav">
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('engines.index') }}">Engines</a>
+        </li>
         <li class="nav-item">
             <a class="nav-link" href="{{ route('games.index') }}">Games</a>
         </li>

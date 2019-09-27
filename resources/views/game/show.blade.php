@@ -6,9 +6,12 @@
 @section('content')
     <div class="row">
         <div class="col-sm">
-            <h3>Bomb number: {{ $game->bombNumber }}</h3>
-            <h3>White: {{ $game->players[$game::WHITE]->name }} ({{ $game->seed1 }} - {{ $game->players[$game::WHITE]->seed }})</h3>
-            <h3>Black: {{ $game->players[$game::BLACK]->name }} ({{ $game->seed2 }} - {{ $game->players[$game::BLACK]->seed }})</h3>
+            <h4>Serial number: {{ $game->serial_number }}</h4>
+            <h4>Bomb number: {{ $game->bomb_number }}</h4>
+            <h4>White: {{ $game->whiteEngine->name }}, seed = {{ $game->white_seed }}</h4>
+            <h4>Black: {{ $game->blackEngine->name }}, seed = {{ $game->black_seed }}</h4>
+            RNG:<br>
+            <pre>M#:          1111111111222222222233333333334<br>   -1234567890123456789012345678901234567890<br>W: {{ $game->white_random }}<br>B: {{ $game->black_random }}</pre>
             <table class="chess-diagram table-borderless">
                 <tr>
                     <td class="board-border">6</td>
@@ -17,10 +20,10 @@
                             @php $light = true @endphp
                             @for ($i = 0; $i < 6; $i++)
                                 <tr>
-                                @for ($j = 0; $j < 5; $j++)
-                                    <td id="square_{{ $i * 5 + $j }}">{{ $light ? '.' : '+' }} </td>
-                                    @php $light = !$light @endphp
-                                @endfor
+                                    @for ($j = 0; $j < 5; $j++)
+                                        <td id="square_{{ $i * 5 + $j }}">{{ $light ? '.' : '+' }} </td>
+                                        @php $light = !$light @endphp
+                                    @endfor
                                 </tr>
                             @endfor
                         </table>
@@ -105,6 +108,7 @@
                     $('#square_' + i).text(moves[move].board.charAt(i));
                 }
             }
+
             drawBoard();
 
         });

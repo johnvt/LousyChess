@@ -2,59 +2,120 @@
 
 namespace App\Models;
 
-use App\Models\Engines\BlackTilesAreLava;
-use App\Models\Engines\RandomMoveEngine;
-use App\Models\Engines\TheKingMustDieEngine;
-use App\Models\Engines\WhiteTilesAreLava;
-use DemeterChain\B;
+use Chovanec\Rating\Rating;
 use Illuminate\Database\Eloquent\Model;
 
-class Game //extends Model
+/**
+ * App\Models\Game
+ *
+ * @property int $id
+ * @property int $white_engine_id
+ * @property int $black_engine_id
+ * @property string $serial_number
+ * @property string $bomb_number
+ * @property int $white_seed
+ * @property string $white_random
+ * @property int $black_seed
+ * @property string $black_random
+ * @property int $num_moves
+ * @property int|null $winner
+ * @property mixed $moves_json
+ * @property mixed $boards_json
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Engine $blackEngine
+ * @property-read mixed $winner_text
+ * @property-read \App\Models\Engine $whiteEngine
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game query()
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereBlackEngineId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereBlackRandom($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereBlackSeed($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereBoardsJson($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereBombNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereMovesJson($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereNumMoves($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereSerialNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereWhiteEngineId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereWhiteRandom($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereWhiteSeed($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Game whereWinner($value)
+ * @mixin \Eloquent
+ */
+class Game extends Model
 {
     const WHITE = 1;
     const BLACK = -1;
     const STARTING_BOARD = 'kqbnrppppp..........PPPPPRNBQK';
 
-    /** @var Engine[] */
-    public $players;
-    public $moveCount = 0;
-    public $moves;
     public $turn = self::WHITE;
 
-    /**
-     * @var string Current board
-     */
+    /** @var string Current board */
     public $board = self::STARTING_BOARD;
+    public $moves = [];
+    public $boards;
 
-    /**
-     * @var array Board after every move
-     */
-    public $boards = [self::STARTING_BOARD];
-    public $winner;
-    public $seed1;
-    public $seed2;
-    public $bombNumber;
-
-    public function run($bombNumber, $seed1, $seed2)
+    public function whiteEngine()
     {
-        $this->bombNumber = $bombNumber;
-        $this->seed1 = $seed1;
-        $this->seed2 = $seed2;
-        $this->players = [
-            self::WHITE => new BlackTilesAreLava(self::WHITE, $bombNumber * $seed1),
-            self::BLACK => new BlackTilesAreLava(self::BLACK, $bombNumber * $seed2)
-        ];
+        return $this->belongsTo(Engine::class);
+    }
 
+    public function blackEngine()
+    {
+        return $this->belongsTo(Engine::class);
+    }
+
+    public function run()
+    {
+        if (!$this->whiteEngine || !$this->blackEngine)
+            throw new \Exception('Engines not set');
+
+        $this->boards = [self::STARTING_BOARD];
+
+        // Random serial number
+        foreach (str_split('xxnlln') as $char) {
+            if ($char == 'x') $char = rand(0, 1) == 0 ? 'n' : 'l';
+            if ($char == 'n') $this->serial_number .= rand(0, 9);
+            else $this->serial_number .= chr(rand(ord('A'), ord('Z')));
+        };
+        foreach (str_split($this->serial_number) as $char) {
+            if (is_numeric($char)) $this->bomb_number .= $char;
+            else $this->bomb_number .= ord($char) - ord('A') + 1;
+        }
+
+        // Random seeds
+        $this->white_seed = rand(0, 9);
+        do {
+            $this->black_seed = rand(0, 9);
+        } while ($this->black_seed == $this->white_seed);
+
+        // Init engines
+        $this->white_random = $this->whiteEngine->init(self::WHITE, $this->white_seed, $this->bomb_number);
+        $this->black_random = $this->blackEngine->init(self::BLACK, $this->black_seed, $this->bomb_number);
+
+        // Take turns until game is finished
         while (true) {
             if ($this->turn == self::WHITE) {
-                $this->moveCount++;
+                $this->num_moves++;
             }
-            $move = $this->players[$this->turn]->move($this);
+
+            $engine = ($this->turn == self::WHITE) ? $this->whiteEngine : $this->blackEngine;
+            $move = $engine->move($this);
+
+            // No valid moves left, other player wins
             if (is_null($move)) {
+                $this->winner = ($this->turn == self::WHITE) ? self::BLACK : self::WHITE;
                 break;
             }
+
+            // Valid move
             $this->moves[] = $move;
 
+            // King captured? Game over
             if ($this->board[$move[1]] == 'k') {
                 $this->winner = self::WHITE;
             }
@@ -64,9 +125,8 @@ class Game //extends Model
             $this->board[$move[1]] = $this->board[$move[0]];
             $this->board[$move[0]] = '.';
 
-
             // Is the game finished?
-            if (!is_null($this->winner) || count($this->moves) == 100) {
+            if (!is_null($this->winner)) {
                 $this->boards[] = $this->board;
                 break;
             }
@@ -81,8 +141,31 @@ class Game //extends Model
 
             $this->boards[] = $this->board;
 
+            // Draw by 40 moves by each side
+            if ($this->turn == self::BLACK && $this->num_moves == 40) {
+                break;
+            }
+
             $this->turn = -$this->turn;
         }
+
+        // Adjust Elo rating
+        $rating = (new Rating(
+            $this->whiteEngine->elo_rating,
+            $this->blackEngine->elo_rating,
+            $this->winner ? ($this->winner == self::WHITE ? Rating::WIN : Rating::LOST) : Rating::DRAW,
+            $this->winner ? ($this->winner == self::BLACK ? Rating::WIN : Rating::LOST) : Rating::DRAW
+        ))->getNewRatings();
+
+        if (!$this->whiteEngine->is($this->blackEngine)) {
+            $this->whiteEngine->elo_rating = $rating['a'];
+            $this->whiteEngine->save();
+            $this->blackEngine->elo_rating = $rating['b'];
+            $this->blackEngine->save();
+        }
+
+        $this->moves_json = json_encode($this->moves);
+        $this->boards_json = json_encode($this->boards);
     }
 
     public function pieceAt($x, $y)
@@ -231,31 +314,26 @@ class Game //extends Model
         return $piece == strtoupper($piece) ? self::WHITE : self::BLACK;
     }
 
-    private function pos($x, $y)
+    public function pos($x, $y)
     {
         return $x + $y * 5;
     }
 
-    private function xy($pos)
+    public function xy($pos)
     {
         return [$pos % 5, intdiv($pos, 5)];
     }
 
     public function getMovesJson()
     {
-        $moves = array_merge([[-1, -1]], $this->moves);
+        $moves = array_merge([[-1, -1]], json_decode($this->moves_json));
+        $boards = json_decode($this->boards_json);
 
-//        $board = self::STARTING_BOARD;
         $result = [];
         foreach ($moves as $i => $move) {
 
-//            if ($move[0] != -1) {
-//                $board[$move[1]] = $board[$move[0]];
-//                $board[$move[0]] = '.';
-//            }
-
             // Piece chars to font chars
-            $string = strtr($this->boards[$i], 'PNBRQKpnbrqk', 'phbrqkojntwl');
+            $string = strtr($boards[$i], 'PNBRQKpnbrqk', 'phbrqkojntwl');
             for ($i = 0; $i < strlen($string); $i++) {
                 $string[$i] = ($i % 2)
                     ? ($string[$i] == '.' ? '+' : strtoupper($string[$i]))
@@ -272,5 +350,12 @@ class Game //extends Model
         $fromXy = $this->xy($from);
         $toXy = $this->xy($to);
         return abs($fromXy[0] - $toXy[0]) + abs($fromXy[1] - $toXy[1]);
+    }
+
+    public function getWinnerTextAttribute()
+    {
+        if ($this->winner == $this::WHITE) return 'White';
+        if ($this->winner == $this::BLACK) return 'Black';
+        return 'Draw';
     }
 }

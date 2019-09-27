@@ -2,92 +2,80 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Engine;
 use App\Models\Game;
 use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    public function seeds()
     {
-
+        echo "<table border='1'>";
+        foreach (Game::inRandomOrder()->limit(10)->get() as $game) {
+            $bombNumber = "";
+            foreach (str_split($game->serial_number) as $char) {
+                if (is_numeric($char)) $bombNumber .= $char;
+                else $bombNumber .= ord($char) - ord('A') + 1;
+            }
+            for ($seed = 0; $seed < 10; $seed++) {
+                $rng = $random = $seed;
+                for ($i = 0; $i < 100; $i++) {
+                    $random = ($random + $bombNumber[$i % strlen($bombNumber)]) % 10;
+                    $rng .= $random;
+                }
+                $counts = [];
+                for ($i = 0; $i < 10; $i++) $counts[$i] = 0;
+                foreach (str_split($rng) as $char) {
+                    $counts[$char]++;
+                }
+                echo "<tr><td>{$seed}</td><td>{$bombNumber}</td><td>{$rng}</td>";
+                foreach ($counts as $count) echo "<td>{$count}</td>";
+                echo "</tr>";
+            }
+        }
+        echo "</table>";
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    public function index(Request $request)
+    {
+        $games = Game::query();
+        if ($request->has('sort') && $request->has('dir')) {
+            $games->orderBy($request->get('sort'), $request->get('dir'));
+        }
+        $games = $games->paginate(20);
+
+        return view('game.index', ['games' => $games]);
+    }
+
     public function create()
     {
-        //
+        ini_set('max_execution_time', 60 * 60);
+        for ($i = 0; $i < 100; $i++) {
+            foreach (Engine::all() as $white) {
+                foreach (Engine::all() as $black) {
+                    $game = new Game;
+                    $game->whiteEngine()->associate($white);
+                    $game->blackEngine()->associate($black);
+                    $game->run();
+                    $game->save();
+                }
+            }
+        }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function run()
     {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Game $game
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Game $game)
-    {
-        $game = new Game();
-
-        $bombNumber = rand(100000, 999999);
-        $seed1 = rand(1, 10);
-        do { $seed2 = rand(1, 10); } while ($seed2 == $seed1);
-
-        $game->run($bombNumber, $seed1, $seed2);
-
+        $game = new Game;
+        $engines = Engine::inRandomOrder()->limit(2)->get();
+        $game->whiteEngine()->associate($engines[0]);
+        $game->blackEngine()->associate(Engine::whereCode('M')->first());
+        $game->run();
+        $game->save();
         return view('game.show', ['game' => $game]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Game $game
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Game $game)
+    public function show(Game $game)
     {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @param  \App\Game $game
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Game $game)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Game $game
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Game $game)
-    {
-        //
+        return view('game.show', ['game' => $game]);
     }
 }

@@ -12,4 +12,13 @@
 */
 
 Route::view('/', 'home')->name('home');
-Route::resource('games', 'GameController');
+
+Route::get('games', 'GameController@index')->name('games.index');
+Route::get('games/create', 'GameController@create')->name('games.create');
+Route::get('games/run', 'GameController@run')->name('games.run');
+Route::get('games/seeds', 'GameController@seeds');
+Route::get('games/{game}', 'GameController@show')->name('games.show');
+
+
+
+Route::get('engines', 'EngineController@index')->name('engines.index');
